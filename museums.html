@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Near You - Museums</title>
+    <link rel="stylesheet" href="museums.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Italiana&family=Jacques+Francois&family=Joan&family=Jost:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav>
+      <a href="home.html" class="logo"><span>Near You</span></a>
+      <button class="hamburger" id="hamburger">☰</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="home.html">Home</a></li>
+        <li><a href="museums.html">Museums</a></li>
+        <li><a href="home.html#Favorites-section">Favorites</a></li>
+      </ul>
+    </nav>
+
+    <main>
+      <!-- Banner -->
+      <div style="position: relative">
+        <img src="images/banner2.png" alt="Museum Banner" class="banner-2" />
+        <div
+          style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+          "
+        >
+          <h1 style="font-size: 3rem">Museums</h1>
+        </div>
+      </div>
+  <h2>Museum Directory</h2>
+  <div class="cards" id="cards"></div>
+
+  <!-- Modal for museum details -->
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <button onclick="closeModal()">× Close</button>
+      <h2 id="modal-title"></h2>
+      <p id="modal-short"></p>
+      <div id="modal-body"></div>
+      <h3>Features</h3>
+      <ul id="modal-features"></ul>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<script>
+  let museums = [];
+  let featureKey = {};
+
+  Promise.all([
+    fetch('museums.csv').then(r => r.text()),
+    fetch('Key.csv').then(r => r.text())
+  ])
+  .then(([museumsCSV, keyCSV]) => {
+    Papa.parse(museumsCSV, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => { 
+        museums = results.data; 
+        console.log("Museums loaded:", museums.length);
+      }
+    });
+
+    Papa.parse(keyCSV, {
+      header: false,
+      skipEmptyLines: true,
+      complete: (results) => {
+        results.data.forEach(row => {
+          if (row.length >= 2) {
+            const code = row[0].toString().trim();
+            const meaning = row[1].trim();
+            if (code && meaning) {
+              featureKey[code] = meaning;
+            }
+          }
+        });
+
+        console.log("✅ Feature Key loaded:", Object.keys(featureKey).length, "items");
+        console.log("First 10 entries:", Object.entries(featureKey).slice(0,10));
+        
+        renderCards();
+      }
+    });
+  })
+  .catch(err => console.error("Fetch error:", err));
+
+  function renderCards() {
+    const container = document.getElementById('cards');
+    container.innerHTML = museums.length ? '' : '<p>No museums found.</p>';
+
+    museums.forEach((museum, index) => {
+      const card = document.createElement('div');
+      card.className = 'museum-card';
+      const img = museum.Image ? museum.Image : 'https://via.placeholder.com/300x200?text=No+Image';
+
+      card.innerHTML = `
+        <img src="${img}" alt="${museum.Name}" style="width:100%; height:200px; object-fit:cover;">
+        <div style="padding:15px;">
+          <h3>${museum.Name || 'No Name'}</h3>
+          <p>${museum.Summary || museum.Desctipion || ''}</p>
+        </div>
+      `;
+      card.onclick = () => showDetails(index);
+      container.appendChild(card);
+    });
+  }
+
+  function showDetails(index) {
+    const m = museums[index];
+    document.getElementById('modal-title').textContent = m.Name || 'Museum';
+
+    document.getElementById('modal-short').innerHTML = `<p><strong>Description:</strong> ${m.Desctipion || ''}</p>`;
+
+    document.getElementById('modal-body').innerHTML = `
+      <p><strong>Admission:</strong> ${m.Admission || 'N/A'}</p>
+      <p><strong>Address:</strong> ${m.Address || 'N/A'}</p>
+      <p><strong>Phone:</strong> ${m.Phone || 'N/A'}</p>
+    `;
+
+    const list = document.getElementById('modal-features');
+    list.innerHTML = '';
+
+    if (m.Features) {
+      const codes = m.Features.split(',').map(c => c.trim());
+      codes.forEach(code => {
+        const text = featureKey[code] || `Feature ${code} (not in key)`;
+        const li = document.createElement('li');
+        li.textContent = text;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById('modal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+  }
+</script></body>
+
+</main>
+    <footer>
+      <p>&copy; 2024 Near You. All rights reserved.</p>
+    </footer>
+</html>
