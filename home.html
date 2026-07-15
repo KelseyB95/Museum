@@ -15,7 +15,7 @@
   <body>
     <nav>
       <a href="home.html" class="logo"><span>Near You</span></a>
-      <button class="hamburger" id="hamburger">☰</button>
+      <button class="hamburger" id="hamburger" type="button" aria-label="Open navigation menu" aria-expanded="false">☰</button>
       <ul class="nav-links" id="nav-links">
         <li><a href="home.html">Home</a></li>
         <li><a href="museums.html">Museums</a></li>
@@ -45,7 +45,9 @@
       <!-- Search -->
       <div class="search-section">
         <h2>Find a museum near you!</h2>
-        <div
+        <form
+          id="search-form"
+          onsubmit="searchMuseums(event)"
           style="
             display: flex;
             gap: 1rem;
@@ -83,7 +85,8 @@
             />
           </div>
           <button
-            onclick="searchMuseums()"
+            id="search-button"
+            type="submit"
             style="
               padding: 12px 30px;
               background: white;
@@ -94,7 +97,8 @@
           >
             Search
           </button>
-        </div>
+        </form>
+        <div id="search-result" class="search-result" aria-live="polite"></div>
       </div>
 
       <!-- Favorites -->
@@ -115,65 +119,301 @@
       <p>&copy; 2026 Near You Museums. All rights reserved.</p>
     </footer>
 
-    <script>
-      // Shared museum data (can move this to a separate data.js later)
-      const museums = [
-        {
-          id: 1,
-          name: "National Air & Space Museum",
-          location: "Washington, DC",
-          img: "https://picsum.photos/id/1015/400/250",
-          admission: "Free",
-          desc: "Iconic aviation...",
-        },
-        {
-          id: 2,
-          name: "The Getty",
-          location: "Los Angeles, CA",
-          img: "https://picsum.photos/id/1016/400/250",
-          admission: "Free",
-          desc: "World-class European art...",
-        },
-        // Add more museums here
-      ];
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-      let favorites = JSON.parse(localStorage.getItem("museumFavs")) || [];
+    <script>
+      const favoritesKey = "museumFavs";
+      const geocodeCacheKey = "museumGeocodeCache";
+      let museumsDataPromise;
+
+      const museumCoordinates = {
+        "the-metropolitan-museum-of-art-1000-fifth-avenue,-new-york,-ny-10028": { lat: 40.7794, lon: -73.9632 },
+        "american-museum-of-natural-history-200-central-park-west,-new-york,-ny-10024": { lat: 40.7813, lon: -73.9735 },
+        "museum-of-modern-art-11-west-53rd-street,-new-york,-ny-10019": { lat: 40.7614, lon: -73.9776 },
+        "national-gallery-of-art-6th-street-&-constitution-ave-nw,-washington,-dc-20565": { lat: 38.8913, lon: -77.02 },
+        "national-museum-of-natural-history-10th-street-&-constitution-ave-nw,-washington,-dc-20560": { lat: 38.8913, lon: -77.0261 },
+        "national-air-and-space-museum-600-independence-ave-sw,-washington,-dc-20560": { lat: 38.8882, lon: -77.0199 },
+        "art-institute-of-chicago-111-south-michigan-avenue,-chicago,-il-60603": { lat: 41.8796, lon: -87.6237 },
+        "j.-paul-getty-museum-(getty-center)-1200-getty-center-drive,-los-angeles,-ca-90049": { lat: 34.078, lon: -118.4741 },
+        "los-angeles-county-museum-of-art-(lacma)-5905-wilshire-blvd,-los-angeles,-ca-90036": { lat: 34.0639, lon: -118.3592 },
+        "museum-of-fine-arts-465-huntington-avenue,-boston,-ma-02115": { lat: 42.3394, lon: -71.0942 },
+        "philadelphia-museum-of-art-2601-benjamin-franklin-parkway,-philadelphia,-pa-19130": { lat: 39.9656, lon: -75.181 },
+        "museum-of-fine-arts-1001-bissonnet-street,-houston,-tx-77005": { lat: 29.7256, lon: -95.3905 },
+        "detroit-institute-of-arts-5200-woodward-avenue,-detroit,-mi-48202": { lat: 42.3594, lon: -83.0645 },
+        "san-francisco-museum-of-modern-art-(sfmoma)-151-third-street,-san-francisco,-ca-94103": { lat: 37.7857, lon: -122.4011 },
+        "the-broad-221-south-grand-avenue,-los-angeles,-ca-90012": { lat: 34.0545, lon: -118.25 },
+        "whitney-museum-of-american-art-99-gansevoort-street,-new-york,-ny-10014": { lat: 40.7396, lon: -74.0089 },
+        "high-museum-of-art-1280-peachtree-street-ne,-atlanta,-ga-30309": { lat: 33.7901, lon: -84.3857 },
+        "national-9/11-memorial-&-museum-180-greenwich-street,-new-york,-ny-10007": { lat: 40.7115, lon: -74.0134 },
+        "crystal-bridges-museum-of-american-art-600-museum-way,-bentonville,-ar-72712": { lat: 36.381, lon: -94.2038 },
+        "minneapolis-institute-of-art-(mia)-2400-3rd-avenue-south,-minneapolis,-mn-55404": { lat: 44.9585, lon: -93.2742 },
+        "the-dali-museum-1-dali-boulevard,-st.-petersburg,-fl-33701": { lat: 27.7653, lon: -82.6313 },
+        "chihuly-collection-(morean-arts-center)-720-central-avenue,-st.-petersburg,-fl-33701": { lat: 27.7711, lon: -82.6437 },
+        "saint-louis-art-museum-1-fine-arts-drive,-st.-louis,-mo-63110": { lat: 38.6391, lon: -90.2946 },
+        "the-field-museum-1400-south-lake-shore-drive,-chicago,-il-60605": { lat: 41.8663, lon: -87.617 },
+        "kimbell-art-museum-3333-camp-bowie-boulevard,-fort-worth,-tx-76107": { lat: 32.7486, lon: -97.363 },
+        "birmingham-museum-of-art-2000-rev.-abraham-woods-jr.-blvd,-birmingham,-al-35203": { lat: 33.5225, lon: -86.8104 },
+        "anchorage-museum-625-c-street,-anchorage,-ak-99501": { lat: 61.2168, lon: -149.8846 },
+        "phoenix-art-museum-1625-n-central-ave,-phoenix,-az-85004": { lat: 33.4669, lon: -112.0726 },
+        "denver-art-museum-100-w-14th-ave-pkwy,-denver,-co-80204": { lat: 39.7372, lon: -104.9898 },
+        "yale-university-art-gallery-1111-chapel-st,-new-haven,-ct-06510": { lat: 41.3083, lon: -72.9305 },
+        "winterthur-museum-5105-kennett-pike,-winterthur,-de-19735": { lat: 39.8083, lon: -75.6099 },
+        "honolulu-museum-of-art-900-s-beretania-st,-honolulu,-hi-96814": { lat: 21.3041, lon: -157.8487 },
+        "boise-art-museum-670-julia-davis-dr,-boise,-id-83702": { lat: 43.6126, lon: -116.204 },
+        "indianapolis-museum-of-art-at-newfields-4000-michigan-rd,-indianapolis,-in-46208": { lat: 39.8265, lon: -86.185 },
+        "des-moines-art-center-4700-grand-ave,-des-moines,-ia-50312": { lat: 41.5839, lon: -93.6741 },
+        "spencer-museum-of-art-1301-mississippi-st,-lawrence,-ks-66045": { lat: 38.9577, lon: -95.2437 },
+        "speed-art-museum-2035-s-3rd-st,-louisville,-ky-40208": { lat: 38.2175, lon: -85.7613 },
+        "new-orleans-museum-of-art-1-collins-diboll-circle,-new-orleans,-la-70124": { lat: 29.9865, lon: -90.0934 },
+        "portland-museum-of-art-7-congress-square,-portland,-me-04101": { lat: 43.6546, lon: -70.2625 },
+        "baltimore-museum-of-art-10-art-museum-dr,-baltimore,-md-21218": { lat: 39.3268, lon: -76.6195 },
+        "mississippi-museum-of-art-380-s-lamar-st,-jackson,-ms-39201": { lat: 32.2988, lon: -90.1848 },
+        "montana-museum-of-art-&-culture-university-of-montana,-missoula,-mt-59812": { lat: 46.8605, lon: -113.9846 },
+        "joslyn-art-museum-2200-dodge-st,-omaha,-ne-68102": { lat: 41.2603, lon: -95.9488 },
+        "nevada-museum-of-art-160-w-liberty-st,-reno,-nv-89501": { lat: 39.5208, lon: -119.8109 },
+        "currier-museum-of-art-150-ash-st,-manchester,-nh-03104": { lat: 42.9971, lon: -71.4557 },
+        "newark-museum-of-art-49-washington-st,-newark,-nj-07102": { lat: 40.7439, lon: -74.1719 },
+        "georgia-o’keeffe-museum-217-johnson-st,-santa-fe,-nm-87501": { lat: 35.6887, lon: -105.938 },
+        "north-carolina-museum-of-art-2110-blue-ridge-rd,-raleigh,-nc-27607": { lat: 35.81, lon: -78.7026 },
+        "north-dakota-museum-of-art-261-centennial-dr,-grand-forks,-nd-58202": { lat: 47.9229, lon: -97.0714 },
+        "cleveland-museum-of-art-11150-east-blvd,-cleveland,-oh-44106": { lat: 41.5089, lon: -81.6114 },
+        "philbrook-museum-of-art-2727-s-rockford-rd,-tulsa,-ok-74114": { lat: 36.1237, lon: -95.9683 },
+        "portland-art-museum-1219-sw-park-ave,-portland,-or-97205": { lat: 45.5162, lon: -122.683 },
+        "risd-museum-20-n-main-st,-providence,-ri-02903": { lat: 41.8268, lon: -71.407 },
+        "gibbes-museum-of-art-135-meeting-st,-charleston,-sc-29401": { lat: 32.7799, lon: -79.9313 },
+        "south-dakota-art-museum-1030-medary-ave,-brookings,-sd-57007": { lat: 44.3133, lon: -96.7833 },
+        "frist-art-museum-919-broadway,-nashville,-tn-37203": { lat: 36.1579, lon: -86.7834 },
+        "utah-museum-of-fine-arts-410-campus-center-dr,-salt-lake-city,-ut-84112": { lat: 40.7608, lon: -111.8456 },
+        "shelburne-museum-6000-shelburne-rd,-shelburne,-vt-05482": { lat: 44.3734, lon: -73.2327 },
+        "virginia-museum-of-fine-arts-200-n-blvd,-richmond,-va-23220": { lat: 37.5568, lon: -77.4746 },
+        "seattle-art-museum-1300-1st-ave,-seattle,-wa-98101": { lat: 47.6073, lon: -122.3381 },
+        "huntington-museum-of-art-2033-mccoy-rd,-huntington,-wv-25701": { lat: 38.4097, lon: -82.434 },
+        "milwaukee-art-museum-700-n-art-museum-dr,-milwaukee,-wi-53202": { lat: 43.0399, lon: -87.897 },
+        "buffalo-bill-center-of-the-west-720-sheridan-ave,-cody,-wy-82414": { lat: 44.5263, lon: -109.0565 },
+      };
+
+      function getFavorites() {
+        const savedFavorites = JSON.parse(localStorage.getItem(favoritesKey)) || [];
+        return savedFavorites.filter(
+          (favorite) => favorite && typeof favorite === "object" && favorite.id,
+        );
+      }
+
+      function getMuseumId(museum) {
+        return `${museum.Name || ""}-${museum.Address || ""}`
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/\s+/g, "-");
+      }
+
+      function loadMuseums() {
+        if (!museumsDataPromise) {
+          museumsDataPromise = fetch("museums.csv")
+            .then((response) => response.text())
+            .then(
+              (csv) =>
+                new Promise((resolve) => {
+                  Papa.parse(csv, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => resolve(results.data),
+                  });
+                }),
+            );
+        }
+
+        return museumsDataPromise;
+      }
+
+      function buildSearchQuery() {
+        const city = document.getElementById("city").value.trim();
+        const state = document.getElementById("state").value.trim();
+        const zip = document.getElementById("zip").value.trim();
+
+        return [city, state, zip].filter(Boolean).join(", ");
+      }
+
+      function getGeocodeCache() {
+        return JSON.parse(localStorage.getItem(geocodeCacheKey)) || {};
+      }
+
+      function saveGeocodeCache(cache) {
+        localStorage.setItem(geocodeCacheKey, JSON.stringify(cache));
+      }
+
+      async function geocodeLocation(query) {
+        const cache = getGeocodeCache();
+        const cacheId = query.toLowerCase();
+
+        if (cache[cacheId]) {
+          return cache[cacheId];
+        }
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(query)}`;
+        const response = await fetch(url);
+        const results = await response.json();
+
+        if (!results.length) {
+          return null;
+        }
+
+        const location = {
+          lat: Number(results[0].lat),
+          lon: Number(results[0].lon),
+        };
+
+        cache[cacheId] = location;
+        saveGeocodeCache(cache);
+
+        return location;
+      }
+
+      function getDistanceInMiles(start, end) {
+        const earthRadius = 3958.8;
+        const toRadians = (degrees) => degrees * (Math.PI / 180);
+        const latDistance = toRadians(end.lat - start.lat);
+        const lonDistance = toRadians(end.lon - start.lon);
+        const startLat = toRadians(start.lat);
+        const endLat = toRadians(end.lat);
+
+        const a =
+          Math.sin(latDistance / 2) * Math.sin(latDistance / 2) +
+          Math.cos(startLat) *
+            Math.cos(endLat) *
+            Math.sin(lonDistance / 2) *
+            Math.sin(lonDistance / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return earthRadius * c;
+      }
+
+      function getMuseumsByDistance(userLocation, museums) {
+        return museums
+          .map((museum) => {
+            const coordinates = museumCoordinates[getMuseumId(museum)];
+
+            if (!coordinates) {
+              return null;
+            }
+
+            return {
+              id: getMuseumId(museum),
+              distance: getDistanceInMiles(userLocation, coordinates),
+            };
+          })
+          .filter(Boolean)
+          .sort((first, second) => first.distance - second.distance);
+      }
+
+      function setSearchMessage(message) {
+        document.getElementById("search-result").innerHTML = `<p>${message}</p>`;
+      }
 
       function renderFavorites() {
         const container = document.getElementById("favorites-grid");
         container.innerHTML = "";
 
-        const favMuseums = museums.filter((m) => favorites.includes(m.id));
+        const favorites = getFavorites();
 
-        if (favMuseums.length === 0) {
+        if (favorites.length === 0) {
           container.innerHTML =
             '<p style="grid-column: 1/-1; text-align:center;">No favorites yet. Browse museums and click the heart!</p>';
           return;
         }
 
-        favMuseums.forEach((museum) => {
+        favorites.forEach((museum) => {
           const card = document.createElement("div");
           card.className = "museum-card";
+          const image =
+            museum.image || "https://via.placeholder.com/300x200?text=No+Image";
           card.innerHTML = `
-                    <img src="${museum.img}" alt="${museum.name}">
+                    <img src="${image}" alt="${museum.name}">
                     <div style="padding: 1rem;">
                         <h3>${museum.name}</h3>
-                        <p>${museum.location}</p>
+                        <p>${museum.address}</p>
+                        <p>${museum.summary}</p>
                     </div>
                 `;
-          card.onclick = () =>
-            (window.location.href = `museum.html?id=${museum.id}`);
           container.appendChild(card);
         });
       }
 
-      function searchMuseums() {
-        // For now, just go to museums page
-        window.location.href = "museums.html";
+      async function searchMuseums(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        const query = buildSearchQuery();
+        const button = document.getElementById("search-button");
+
+        if (!query) {
+          setSearchMessage("Enter a city, state, ZIP code, or any combination of those fields.");
+          return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Searching...";
+        setSearchMessage("Finding the closest museum...");
+
+        try {
+          const [museums, userLocation] = await Promise.all([
+            loadMuseums(),
+            geocodeLocation(`${query}, USA`),
+          ]);
+
+          if (!userLocation) {
+            setSearchMessage("I could not find that location. Try adding a state or ZIP code.");
+            return;
+          }
+
+          const searchResults = getMuseumsByDistance(userLocation, museums);
+
+          if (!searchResults.length) {
+            setSearchMessage("No museum locations are available yet.");
+            return;
+          }
+
+          sessionStorage.setItem(
+            "museumSearchResults",
+            JSON.stringify({
+              query,
+              results: searchResults,
+            }),
+          );
+          window.location.href = "museums.html?search=1";
+        } catch (error) {
+          console.error("Search failed:", error);
+          setSearchMessage("Search is unavailable right now. Please try again in a moment.");
+        } finally {
+          button.disabled = false;
+          button.textContent = "Search";
+        }
+      }
+
+      function setupMobileMenu() {
+        const hamburger = document.getElementById("hamburger");
+        const navLinks = document.getElementById("nav-links");
+
+        hamburger.addEventListener("click", () => {
+          const isOpen = navLinks.classList.toggle("open");
+          hamburger.setAttribute("aria-expanded", isOpen.toString());
+        });
+
+        navLinks.querySelectorAll("a").forEach((link) => {
+          link.addEventListener("click", () => {
+            navLinks.classList.remove("open");
+            hamburger.setAttribute("aria-expanded", "false");
+          });
+        });
       }
 
       // Initialize
-      window.onload = renderFavorites;
+      window.onload = () => {
+        setupMobileMenu();
+        renderFavorites();
+        loadMuseums();
+      };
     </script>
   </body>
 </html>

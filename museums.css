@@ -23,28 +23,90 @@ ul {
   font-family: Italiana, serif;
   background: white;
   padding: 0.5rem 0.5rem;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 nav {
   background: #400606;
   padding: 1rem 2rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
+  min-height: 48px;
+  position: relative;
 }
 
 .nav-links {
   list-style: none;
   display: flex;
   gap: 2rem;
+  margin: 0;
 }
 .nav-links a {
   color: white;
   text-decoration: none;
 }
-.banner-image {
+
+.hamburger {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  nav {
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .hamburger {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .logo {
+    font-size: 1.6rem;
+  }
+
+  .nav-links {
+    background: #400606;
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    left: 0;
+    padding: 1rem 0;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 10;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-links li {
+    text-align: center;
+  }
+
+  .nav-links a {
+    display: block;
+    padding: 0.75rem 1rem;
+  }
+}
+.banner-2 {
   width: 100%;
-  height: 400px;
+  height: 450px;
   object-fit: cover;
 }
 
@@ -75,6 +137,39 @@ nav {
   gap: 20px;
   padding: 2em;
 }
+
+.directory-message {
+  margin: 0 2rem;
+}
+
+.search-directory-message {
+  background: white;
+  border-left: 8px solid #400606;
+  border-radius: 8px;
+  color: black;
+  padding: 1rem;
+}
+
+.search-directory-message strong,
+.search-directory-message span {
+  display: block;
+}
+
+.closest-museum-card {
+  border: 4px solid #d6b25e;
+  box-shadow: 0 0 25px rgba(214, 178, 94, 0.45);
+}
+
+.closest-museum-card::before {
+  background: #d6b25e;
+  color: black;
+  content: "Closest Match";
+  display: block;
+  font-weight: bold;
+  padding: 0.6rem;
+  text-align: center;
+}
+
 .card {
   border: 1px solid #ddd;
   padding: 15px;
@@ -102,6 +197,39 @@ nav {
   border-radius: 10px;
   max-width: 700px;
   width: 90%;
+  color: rgb(0, 0, 0);
+  position: relative;
+}
+
+.close-button {
+  background: #400606;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+}
+
+.favorite-button {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: white;
+  border: 2px solid #400606;
+  border-radius: 50%;
+  color: #400606;
+  cursor: pointer;
+  font-size: 1.7rem;
+  height: 44px;
+  line-height: 1;
+  width: 44px;
+  transition: 0.2s;
+}
+
+.favorite-button:hover,
+.favorite-button.is-favorite {
+  background: #400606;
+  color: white;
 }
 
 h1 {
@@ -117,6 +245,12 @@ h2 {
   font-family: "Jacques Francois", system-ui, sans-serif;
 }
 
+.modal h2 {
+  margin-left: 0;
+  padding-right: 3rem;
+}
+
 .modal p {
   font-family: "Joan", system-ui, sans-serif;
+  color: rgb(0, 0, 0);
 }

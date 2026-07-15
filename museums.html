@@ -15,7 +15,7 @@
   <body>
     <nav>
       <a href="home.html" class="logo"><span>Near You</span></a>
-      <button class="hamburger" id="hamburger">☰</button>
+      <button class="hamburger" id="hamburger" type="button" aria-label="Open navigation menu" aria-expanded="false">☰</button>
       <ul class="nav-links" id="nav-links">
         <li><a href="home.html">Home</a></li>
         <li><a href="museums.html">Museums</a></li>
@@ -42,12 +42,14 @@
         </div>
       </div>
   <h2>Museum Directory</h2>
+  <div id="directory-message" class="directory-message"></div>
   <div class="cards" id="cards"></div>
 
   <!-- Modal for museum details -->
   <div class="modal" id="modal">
     <div class="modal-content">
-      <button onclick="closeModal()">× Close</button>
+      <button class="favorite-button" id="favorite-button" type="button" onclick="toggleFavorite()" aria-label="Add to favorites" aria-pressed="false">♡</button>
+      <button class="close-button" onclick="closeModal()">× Close</button>
       <h2 id="modal-title"></h2>
       <p id="modal-short"></p>
       <div id="modal-body"></div>
@@ -61,6 +63,9 @@
 <script>
   let museums = [];
   let featureKey = {};
+  let currentMuseumIndex = null;
+  let showingSearchResults = false;
+  const favoritesKey = 'museumFavs';
 
   Promise.all([
     fetch('museums.csv').then(r => r.text()),
@@ -94,19 +99,25 @@
         console.log("First 10 entries:", Object.entries(featureKey).slice(0,10));
         
         renderCards();
+        renderSearchResults();
       }
     });
   })
   .catch(err => console.error("Fetch error:", err));
 
-  function renderCards() {
+  function renderCards(museumsToRender = museums, isSearchResult = false) {
     const container = document.getElementById('cards');
-    container.innerHTML = museums.length ? '' : '<p>No museums found.</p>';
+    container.innerHTML = museumsToRender.length ? '' : '<p>No museums found.</p>';
 
-    museums.forEach((museum, index) => {
+    museumsToRender.forEach((museum, cardIndex) => {
+      const index = museums.indexOf(museum);
       const card = document.createElement('div');
       card.className = 'museum-card';
       const img = museum.Image ? museum.Image : 'https://via.placeholder.com/300x200?text=No+Image';
+
+      if (cardIndex === 0 && isSearchResult) {
+        card.classList.add('closest-museum-card');
+      }
 
       card.innerHTML = `
         <img src="${img}" alt="${museum.Name}" style="width:100%; height:200px; object-fit:cover;">
@@ -120,7 +131,124 @@
     });
   }
 
+  function getMuseumId(museum) {
+    return `${museum.Name || ''}-${museum.Address || ''}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, '-');
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderSearchResults() {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    if (!searchParams.has('search')) {
+      return;
+    }
+
+    const savedResults = sessionStorage.getItem('museumSearchResults');
+    sessionStorage.removeItem('museumSearchResults');
+    window.history.replaceState({}, '', 'museums.html');
+
+    if (!savedResults) {
+      return;
+    }
+
+    let search;
+
+    try {
+      search = JSON.parse(savedResults);
+    } catch (error) {
+      console.error('Could not read search results:', error);
+      return;
+    }
+
+    if (!search.results || !Array.isArray(search.results)) {
+      return;
+    }
+
+    const museumsByDistance = search.results
+      .map(result => museums.find(museum => getMuseumId(museum) === result.id))
+      .filter(Boolean);
+
+    document.getElementById('directory-message').innerHTML = `
+      <div class="search-directory-message">
+        <strong>Closest museums to ${escapeHtml(search.query)}</strong>
+        <span>The first card is your closest match.</span>
+      </div>
+    `;
+
+    showingSearchResults = true;
+    renderCards(museumsByDistance, true);
+  }
+
+  function getFavorites() {
+    const savedFavorites = JSON.parse(localStorage.getItem(favoritesKey)) || [];
+    return savedFavorites.filter(favorite => favorite && typeof favorite === 'object' && favorite.id);
+  }
+
+  function saveFavorites(favorites) {
+    localStorage.setItem(favoritesKey, JSON.stringify(favorites));
+  }
+
+  function isFavorite(museum) {
+    const museumId = getMuseumId(museum);
+    return getFavorites().some(favorite => favorite.id === museumId);
+  }
+
+  function makeFavorite(museum) {
+    return {
+      id: getMuseumId(museum),
+      name: museum.Name || 'Museum',
+      summary: museum.Summary || museum.Desctipion || '',
+      image: museum.Image || 'https://via.placeholder.com/300x200?text=No+Image',
+      admission: museum.Admission || 'N/A',
+      address: museum.Address || 'N/A',
+      phone: museum.Phone || 'N/A'
+    };
+  }
+
+  function updateFavoriteButton(museum) {
+    const button = document.getElementById('favorite-button');
+    const favorite = isFavorite(museum);
+
+    button.classList.toggle('is-favorite', favorite);
+    button.textContent = favorite ? '♥' : '♡';
+    button.setAttribute('aria-label', favorite ? 'Remove from favorites' : 'Add to favorites');
+    button.setAttribute('aria-pressed', favorite.toString());
+  }
+
+  function toggleFavorite() {
+    if (currentMuseumIndex === null) {
+      return;
+    }
+
+    const museum = museums[currentMuseumIndex];
+    const museumId = getMuseumId(museum);
+    const favorites = getFavorites();
+    const existingFavorite = favorites.findIndex(favorite => favorite.id === museumId);
+
+    if (existingFavorite >= 0) {
+      favorites.splice(existingFavorite, 1);
+    } else {
+      favorites.push(makeFavorite(museum));
+    }
+
+    saveFavorites(favorites);
+    updateFavoriteButton(museum);
+  }
+
   function showDetails(index) {
+    currentMuseumIndex = index;
     const m = museums[index];
     document.getElementById('modal-title').textContent = m.Name || 'Museum';
 
@@ -145,16 +273,43 @@
       });
     }
 
+    updateFavoriteButton(m);
     document.getElementById('modal').style.display = 'flex';
   }
 
   function closeModal() {
     document.getElementById('modal').style.display = 'none';
   }
-</script></body>
 
-</main>
+  function setupMobileMenu() {
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('nav-links');
+
+    hamburger.addEventListener('click', () => {
+      const isOpen = navLinks.classList.toggle('open');
+      hamburger.setAttribute('aria-expanded', isOpen.toString());
+    });
+
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+  window.addEventListener('pageshow', event => {
+    if (event.persisted && showingSearchResults) {
+      window.location.reload();
+    }
+  });
+
+  setupMobileMenu();
+</script>
+
+    </main>
     <footer>
       <p>&copy; 2024 Near You. All rights reserved.</p>
     </footer>
+  </body>
 </html>
