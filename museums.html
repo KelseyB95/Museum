@@ -15,11 +15,23 @@
   <body>
     <nav>
       <a href="home.html" class="logo"><span>Near You</span></a>
-      <button class="hamburger" id="hamburger" type="button" aria-label="Open navigation menu" aria-expanded="false">☰</button>
+      <button
+        class="hamburger"
+        id="hamburger"
+        type="button"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
       <ul class="nav-links" id="nav-links">
         <li><a href="home.html">Home</a></li>
         <li><a href="museums.html">Museums</a></li>
+        <li><a href="about.html">About</a></li>
         <li><a href="home.html#Favorites-section">Favorites</a></li>
+        <li class="mobile-only-nav">
+          <a href="privacy.html">Privacy Policy</a>
+        </li>
       </ul>
     </nav>
 
@@ -41,275 +53,347 @@
           <h1 style="font-size: 3rem">Museums</h1>
         </div>
       </div>
-  <h2>Museum Directory</h2>
-  <div id="directory-message" class="directory-message"></div>
-  <div class="cards" id="cards"></div>
+      <h2>Museum Directory</h2>
+      <div id="directory-message" class="directory-message"></div>
+      <div class="cards" id="cards"></div>
 
-  <!-- Modal for museum details -->
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <button class="favorite-button" id="favorite-button" type="button" onclick="toggleFavorite()" aria-label="Add to favorites" aria-pressed="false">♡</button>
-      <button class="close-button" onclick="closeModal()">× Close</button>
-      <h2 id="modal-title"></h2>
-      <p id="modal-short"></p>
-      <div id="modal-body"></div>
-      <h3>Features</h3>
-      <ul id="modal-features"></ul>
-    </div>
-  </div>
+      <!-- Modal for museum details -->
+      <div class="modal" id="modal">
+        <div class="modal-content">
+          <button
+            class="favorite-button"
+            id="favorite-button"
+            type="button"
+            onclick="toggleFavorite()"
+            aria-label="Add to favorites"
+            aria-pressed="false"
+          >
+            ♡
+          </button>
+          <button class="close-button" onclick="closeModal()">× Close</button>
+          <img id="modal-image" class="modal-image" src="" alt="" />
+          <h2 id="modal-title"></h2>
+          <p id="modal-short"></p>
+          <div id="modal-body"></div>
+          <h3>Features</h3>
+          <ul id="modal-features"></ul>
+        </div>
+      </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-<script>
-  let museums = [];
-  let featureKey = {};
-  let currentMuseumIndex = null;
-  let showingSearchResults = false;
-  const favoritesKey = 'museumFavs';
+      <script>
+        let museums = [];
+        let featureKey = {};
+        let currentMuseumIndex = null;
+        let showingSearchResults = false;
+        const favoritesKey = "museumFavs";
 
-  Promise.all([
-    fetch('museums.csv').then(r => r.text()),
-    fetch('Key.csv').then(r => r.text())
-  ])
-  .then(([museumsCSV, keyCSV]) => {
-    Papa.parse(museumsCSV, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => { 
-        museums = results.data; 
-        console.log("Museums loaded:", museums.length);
-      }
-    });
+        Promise.all([
+          fetch("museums.csv").then((r) => r.text()),
+          fetch("Key.csv").then((r) => r.text()),
+        ])
+          .then(([museumsCSV, keyCSV]) => {
+            Papa.parse(museumsCSV, {
+              header: true,
+              skipEmptyLines: true,
+              complete: (results) => {
+                museums = results.data;
+                console.log("Museums loaded:", museums.length);
+              },
+            });
 
-    Papa.parse(keyCSV, {
-      header: false,
-      skipEmptyLines: true,
-      complete: (results) => {
-        results.data.forEach(row => {
-          if (row.length >= 2) {
-            const code = row[0].toString().trim();
-            const meaning = row[1].trim();
-            if (code && meaning) {
-              featureKey[code] = meaning;
+            Papa.parse(keyCSV, {
+              header: false,
+              skipEmptyLines: true,
+              complete: (results) => {
+                results.data.forEach((row) => {
+                  if (row.length >= 2) {
+                    const code = row[0].toString().trim();
+                    const meaning = row[1].trim();
+                    if (code && meaning) {
+                      featureKey[code] = meaning;
+                    }
+                  }
+                });
+
+                console.log(
+                  "✅ Feature Key loaded:",
+                  Object.keys(featureKey).length,
+                  "items",
+                );
+                console.log(
+                  "First 10 entries:",
+                  Object.entries(featureKey).slice(0, 10),
+                );
+
+                renderCards();
+                renderSearchResults();
+                openFavoriteModal();
+              },
+            });
+          })
+          .catch((err) => console.error("Fetch error:", err));
+
+        function renderCards(
+          museumsToRender = museums,
+          isSearchResult = false,
+        ) {
+          const container = document.getElementById("cards");
+          container.innerHTML = museumsToRender.length
+            ? ""
+            : "<p>No museums found.</p>";
+
+          museumsToRender.forEach((museum, cardIndex) => {
+            const index = museums.indexOf(museum);
+            const card = document.createElement("div");
+            card.className = "museum-card";
+            const img = museum.Image
+              ? museum.Image
+              : "https://via.placeholder.com/300x200?text=No+Image";
+
+            if (cardIndex === 0 && isSearchResult) {
+              card.classList.add("closest-museum-card");
             }
-          }
-        });
 
-        console.log("✅ Feature Key loaded:", Object.keys(featureKey).length, "items");
-        console.log("First 10 entries:", Object.entries(featureKey).slice(0,10));
-        
-        renderCards();
-        renderSearchResults();
-      }
-    });
-  })
-  .catch(err => console.error("Fetch error:", err));
-
-  function renderCards(museumsToRender = museums, isSearchResult = false) {
-    const container = document.getElementById('cards');
-    container.innerHTML = museumsToRender.length ? '' : '<p>No museums found.</p>';
-
-    museumsToRender.forEach((museum, cardIndex) => {
-      const index = museums.indexOf(museum);
-      const card = document.createElement('div');
-      card.className = 'museum-card';
-      const img = museum.Image ? museum.Image : 'https://via.placeholder.com/300x200?text=No+Image';
-
-      if (cardIndex === 0 && isSearchResult) {
-        card.classList.add('closest-museum-card');
-      }
-
-      card.innerHTML = `
+            card.innerHTML = `
         <img src="${img}" alt="${museum.Name}" style="width:100%; height:200px; object-fit:cover;">
         <div style="padding:15px;">
-          <h3>${museum.Name || 'No Name'}</h3>
-          <p>${museum.Summary || museum.Desctipion || ''}</p>
+          <h3>${museum.Name || "No Name"}</h3>
+          <p>${museum.Summary || museum.Desctipion || ""}</p>
         </div>
       `;
-      card.onclick = () => showDetails(index);
-      container.appendChild(card);
-    });
-  }
+            card.onclick = () => showDetails(index);
+            container.appendChild(card);
+          });
+        }
 
-  function getMuseumId(museum) {
-    return `${museum.Name || ''}-${museum.Address || ''}`
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/\s+/g, '-');
-  }
+        function getMuseumId(museum) {
+          return `${museum.Name || ""}-${museum.Address || ""}`
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/\s+/g, "-");
+        }
 
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
+        function normalizeMuseumId(museumId) {
+          return museumId
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+        }
 
-  function renderSearchResults() {
-    const searchParams = new URLSearchParams(window.location.search);
+        function escapeHtml(value) {
+          return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
 
-    if (!searchParams.has('search')) {
-      return;
-    }
+        function renderSearchResults() {
+          const searchParams = new URLSearchParams(window.location.search);
 
-    const savedResults = sessionStorage.getItem('museumSearchResults');
-    sessionStorage.removeItem('museumSearchResults');
-    window.history.replaceState({}, '', 'museums.html');
+          if (!searchParams.has("search")) {
+            return;
+          }
 
-    if (!savedResults) {
-      return;
-    }
+          const savedResults = sessionStorage.getItem("museumSearchResults");
+          sessionStorage.removeItem("museumSearchResults");
+          window.history.replaceState({}, "", "museums.html");
 
-    let search;
+          if (!savedResults) {
+            return;
+          }
 
-    try {
-      search = JSON.parse(savedResults);
-    } catch (error) {
-      console.error('Could not read search results:', error);
-      return;
-    }
+          let search;
 
-    if (!search.results || !Array.isArray(search.results)) {
-      return;
-    }
+          try {
+            search = JSON.parse(savedResults);
+          } catch (error) {
+            console.error("Could not read search results:", error);
+            return;
+          }
 
-    const museumsByDistance = search.results
-      .map(result => museums.find(museum => getMuseumId(museum) === result.id))
-      .filter(Boolean);
+          if (!search.results || !Array.isArray(search.results)) {
+            return;
+          }
 
-    document.getElementById('directory-message').innerHTML = `
+          const museumsByDistance = search.results
+            .map((result) =>
+              museums.find((museum) => getMuseumId(museum) === result.id),
+            )
+            .filter(Boolean);
+
+          document.getElementById("directory-message").innerHTML = `
       <div class="search-directory-message">
         <strong>Closest museums to ${escapeHtml(search.query)}</strong>
         <span>The first card is your closest match.</span>
       </div>
     `;
 
-    showingSearchResults = true;
-    renderCards(museumsByDistance, true);
-  }
+          showingSearchResults = true;
+          renderCards(museumsByDistance, true);
+        }
 
-  function getFavorites() {
-    const savedFavorites = JSON.parse(localStorage.getItem(favoritesKey)) || [];
-    return savedFavorites.filter(favorite => favorite && typeof favorite === 'object' && favorite.id);
-  }
+        function openFavoriteModal() {
+          const favoriteMuseumId = new URLSearchParams(
+            window.location.search,
+          ).get("favorite");
 
-  function saveFavorites(favorites) {
-    localStorage.setItem(favoritesKey, JSON.stringify(favorites));
-  }
+          if (!favoriteMuseumId) {
+            return;
+          }
 
-  function isFavorite(museum) {
-    const museumId = getMuseumId(museum);
-    return getFavorites().some(favorite => favorite.id === museumId);
-  }
+          const museumIndex = museums.findIndex(
+            (museum) =>
+              getMuseumId(museum) === normalizeMuseumId(favoriteMuseumId),
+          );
 
-  function makeFavorite(museum) {
-    return {
-      id: getMuseumId(museum),
-      name: museum.Name || 'Museum',
-      summary: museum.Summary || museum.Desctipion || '',
-      image: museum.Image || 'https://via.placeholder.com/300x200?text=No+Image',
-      admission: museum.Admission || 'N/A',
-      address: museum.Address || 'N/A',
-      phone: museum.Phone || 'N/A'
-    };
-  }
+          if (museumIndex >= 0) {
+            showDetails(museumIndex);
+            window.history.replaceState({}, "", "museums.html");
+          }
+        }
 
-  function updateFavoriteButton(museum) {
-    const button = document.getElementById('favorite-button');
-    const favorite = isFavorite(museum);
+        function getFavorites() {
+          const savedFavorites =
+            JSON.parse(localStorage.getItem(favoritesKey)) || [];
+          return savedFavorites.filter(
+            (favorite) =>
+              favorite && typeof favorite === "object" && favorite.id,
+          );
+        }
 
-    button.classList.toggle('is-favorite', favorite);
-    button.textContent = favorite ? '♥' : '♡';
-    button.setAttribute('aria-label', favorite ? 'Remove from favorites' : 'Add to favorites');
-    button.setAttribute('aria-pressed', favorite.toString());
-  }
+        function saveFavorites(favorites) {
+          localStorage.setItem(favoritesKey, JSON.stringify(favorites));
+        }
 
-  function toggleFavorite() {
-    if (currentMuseumIndex === null) {
-      return;
-    }
+        function isFavorite(museum) {
+          const museumId = getMuseumId(museum);
+          return getFavorites().some((favorite) => favorite.id === museumId);
+        }
 
-    const museum = museums[currentMuseumIndex];
-    const museumId = getMuseumId(museum);
-    const favorites = getFavorites();
-    const existingFavorite = favorites.findIndex(favorite => favorite.id === museumId);
+        function makeFavorite(museum) {
+          return {
+            id: getMuseumId(museum),
+            name: museum.Name || "Museum",
+            summary: museum.Summary || museum.Desctipion || "",
+            image:
+              museum.Image ||
+              "https://via.placeholder.com/300x200?text=No+Image",
+            admission: museum.Admission || "N/A",
+            address: museum.Address || "N/A",
+            phone: museum.Phone || "N/A",
+          };
+        }
 
-    if (existingFavorite >= 0) {
-      favorites.splice(existingFavorite, 1);
-    } else {
-      favorites.push(makeFavorite(museum));
-    }
+        function updateFavoriteButton(museum) {
+          const button = document.getElementById("favorite-button");
+          const favorite = isFavorite(museum);
 
-    saveFavorites(favorites);
-    updateFavoriteButton(museum);
-  }
+          button.classList.toggle("is-favorite", favorite);
+          button.textContent = favorite ? "♥" : "♡";
+          button.setAttribute(
+            "aria-label",
+            favorite ? "Remove from favorites" : "Add to favorites",
+          );
+          button.setAttribute("aria-pressed", favorite.toString());
+        }
 
-  function showDetails(index) {
-    currentMuseumIndex = index;
-    const m = museums[index];
-    document.getElementById('modal-title').textContent = m.Name || 'Museum';
+        function toggleFavorite() {
+          if (currentMuseumIndex === null) {
+            return;
+          }
 
-    document.getElementById('modal-short').innerHTML = `<p><strong>Description:</strong> ${m.Desctipion || ''}</p>`;
+          const museum = museums[currentMuseumIndex];
+          const museumId = getMuseumId(museum);
+          const favorites = getFavorites();
+          const existingFavorite = favorites.findIndex(
+            (favorite) => favorite.id === museumId,
+          );
 
-    document.getElementById('modal-body').innerHTML = `
-      <p><strong>Admission:</strong> ${m.Admission || 'N/A'}</p>
-      <p><strong>Address:</strong> ${m.Address || 'N/A'}</p>
-      <p><strong>Phone:</strong> ${m.Phone || 'N/A'}</p>
+          if (existingFavorite >= 0) {
+            favorites.splice(existingFavorite, 1);
+          } else {
+            favorites.push(makeFavorite(museum));
+          }
+
+          saveFavorites(favorites);
+          updateFavoriteButton(museum);
+        }
+
+        function showDetails(index) {
+          currentMuseumIndex = index;
+          const m = museums[index];
+          const img = m.Image
+            ? m.Image
+            : "https://via.placeholder.com/300x200?text=No+Image";
+          document.getElementById("modal-title").textContent =
+            m.Name || "Museum";
+          document.getElementById("modal-image").src = img;
+          document.getElementById("modal-image").alt = m.Name || "Museum image";
+
+          document.getElementById("modal-short").innerHTML =
+            `<p><strong>Description:</strong> ${m.Desctipion || ""}</p>`;
+
+          document.getElementById("modal-body").innerHTML = `
+      <p><strong>Admission:</strong> ${m.Admission || "N/A"}</p>
+      <p><strong>Address:</strong> ${m.Address || "N/A"}</p>
+      <p><strong>Phone:</strong> ${m.Phone || "N/A"}</p>
     `;
 
-    const list = document.getElementById('modal-features');
-    list.innerHTML = '';
+          const list = document.getElementById("modal-features");
+          list.innerHTML = "";
 
-    if (m.Features) {
-      const codes = m.Features.split(',').map(c => c.trim());
-      codes.forEach(code => {
-        const text = featureKey[code] || `Feature ${code} (not in key)`;
-        const li = document.createElement('li');
-        li.textContent = text;
-        list.appendChild(li);
-      });
-    }
+          if (m.Features) {
+            const codes = m.Features.split(",").map((c) => c.trim());
+            codes.forEach((code) => {
+              const text = featureKey[code] || `Feature ${code} (not in key)`;
+              const li = document.createElement("li");
+              li.textContent = text;
+              list.appendChild(li);
+            });
+          }
 
-    updateFavoriteButton(m);
-    document.getElementById('modal').style.display = 'flex';
-  }
+          updateFavoriteButton(m);
+          document.getElementById("modal").style.display = "flex";
+        }
 
-  function closeModal() {
-    document.getElementById('modal').style.display = 'none';
-  }
+        function closeModal() {
+          document.getElementById("modal").style.display = "none";
+        }
 
-  function setupMobileMenu() {
-    const hamburger = document.getElementById('hamburger');
-    const navLinks = document.getElementById('nav-links');
+        function setupMobileMenu() {
+          const hamburger = document.getElementById("hamburger");
+          const navLinks = document.getElementById("nav-links");
 
-    hamburger.addEventListener('click', () => {
-      const isOpen = navLinks.classList.toggle('open');
-      hamburger.setAttribute('aria-expanded', isOpen.toString());
-    });
+          hamburger.addEventListener("click", () => {
+            const isOpen = navLinks.classList.toggle("open");
+            hamburger.setAttribute("aria-expanded", isOpen.toString());
+          });
 
-    navLinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        navLinks.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-      });
-    });
-  }
+          navLinks.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", () => {
+              navLinks.classList.remove("open");
+              hamburger.setAttribute("aria-expanded", "false");
+            });
+          });
+        }
 
-  window.addEventListener('pageshow', event => {
-    if (event.persisted && showingSearchResults) {
-      window.location.reload();
-    }
-  });
+        window.addEventListener("pageshow", (event) => {
+          if (event.persisted && showingSearchResults) {
+            window.location.reload();
+          }
+        });
 
-  setupMobileMenu();
-</script>
-
+        setupMobileMenu();
+      </script>
     </main>
     <footer>
-      <p>&copy; 2024 Near You. All rights reserved.</p>
+      <p>&copy; 2026 Near You. All rights reserved.</p>
+      <p><a href="privacy.html">Privacy Policy</a></p>
     </footer>
   </body>
 </html>

@@ -5,7 +5,6 @@ body {
   background: #141211;
   color: #ddd;
 }
-
 a {
   text-decoration: none;
 }
@@ -112,51 +111,61 @@ nav {
     padding: 0.75rem 1rem;
   }
 }
-.banner-image {
-  width: 100%;
-  height: 400px;
-  object-fit: cover;
+
+.privacy-policy {
+  background: #1f1f1f;
+  border-radius: 10px;
+  box-sizing: border-box;
+  line-height: 1.7;
+  margin: 3rem auto;
+  max-width: 900px;
+  padding: 2.5rem;
+  width: calc(100% - 3rem);
 }
-.search-section {
+
+.privacy-policy h1,
+.privacy-policy h2 {
+  font-family: "Jacques Francois", system-ui, sans-serif;
+}
+
+.privacy-policy h1 {
   background: #400606;
-  padding: 2rem;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem;
   text-align: center;
 }
 
-.search-result {
-  max-width: 800px;
-  margin: 1.5rem auto 0;
+.privacy-policy h2 {
+  color: white;
+  margin: 1.75rem 0 0.5rem;
 }
 
-#search-button:disabled {
-  cursor: wait;
-  opacity: 0.7;
+.privacy-policy p {
+  font-family: "Joan", system-ui, sans-serif;
+  margin: 0 0 1rem;
 }
 
-.museums-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
-  padding: 2rem;
-}
-.museum-card {
-  background: #1f1f1f;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: 0.3s;
-}
-.favorite-card {
-  cursor: pointer;
-}
-.museum-card:hover {
-  transform: scale(1.05);
-}
-.museum-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
+@media (max-width: 700px) {
+  .privacy-policy {
+    margin: 2rem auto;
+    padding: 1.5rem;
+    width: calc(100% - 2rem);
+  }
+
+  .privacy-policy h1 {
+    font-size: 2rem;
+  }
 }
 
-footer p {
-  margin: 0.5em 2em;
+@media (max-width: 450px) {
+  .privacy-policy {
+    border-radius: 0;
+    margin: 1rem auto;
+    padding: 1rem;
+    width: 100%;
+  }
+
+  .privacy-policy h1 {
+    font-size: 1.7rem;
+  }
 }

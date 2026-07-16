@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Near You</title>
+    <link rel="stylesheet" href="about.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Italiana&family=Jacques+Francois&family=Joan&family=Jost:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav>
+      <a href="home.html" class="logo"><span>Near You</span></a>
+      <button
+        class="hamburger"
+        id="hamburger"
+        type="button"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="home.html">Home</a></li>
+        <li><a href="museums.html">Museums</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="home.html#Favorites-section">Favorites</a></li>
+        <li class="mobile-only-nav">
+          <a href="privacy.html">Privacy Policy</a>
+        </li>
+      </ul>
+    </nav>
+    <main>
+      <section class="about-content">
+        <div class="about-intro">
+          <h1>About Near You</h1>
+          <p>
+            Near You is a mock museum discovery website created as a portfolio
+            project. It helps visitors browse museums, search by location, and
+            save favorites while showing practical front-end design and
+            interaction skills.
+          </p>
+        </div>
+        <div class="about-grid">
+          <article class="about-card">
+            <h2>Purpose</h2>
+            <p>
+              This site was designed to feel professional, welcoming, and easy
+              to use. The goal is to make museum information feel organized and
+              approachable for visitors on desktop, tablet, and mobile screens.
+            </p>
+          </article>
+          <article class="about-card">
+            <h2>Features</h2>
+            <p>
+              Visitors can search for nearby museums, view detailed museum
+              information, favorite museums, and revisit their saved favorites
+              from the homepage.
+            </p>
+          </article>
+        </div>
+        <section class="contact-panel" aria-labelledby="contact-title">
+          <div>
+            <p class="eyebrow">Get In Touch</p>
+            <h2 id="contact-title">Want to reach out?</h2>
+            <p>
+              I would be happy to connect about this project, portfolio work, or
+              other opportunities.
+            </p>
+            <p class="contact-email">kelsey.bullard2021@gmail.com</p>
+          </div>
+          <a
+            class="contact-button"
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=kelsey.bullard2021@gmail.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Email Me
+          </a>
+        </section>
+      </section>
+
+      <script>
+        function setupMobileMenu() {
+          const hamburger = document.getElementById("hamburger");
+          const navLinks = document.getElementById("nav-links");
+
+          hamburger.addEventListener("click", () => {
+            const isOpen = navLinks.classList.toggle("open");
+            hamburger.setAttribute("aria-expanded", isOpen.toString());
+          });
+
+          navLinks.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", () => {
+              navLinks.classList.remove("open");
+              hamburger.setAttribute("aria-expanded", "false");
+            });
+          });
+        }
+
+        setupMobileMenu();
+      </script>
+    </main>
+    <footer>
+      <p>&copy; 2026 Near You. All rights reserved.</p>
+      <p><a href="privacy.html">Privacy Policy</a></p>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Near You</title>
+    <link rel="stylesheet" href="privacy.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Italiana&family=Jacques+Francois&family=Joan&family=Jost:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav>
+      <a href="home.html" class="logo"><span>Near You</span></a>
+      <button
+        class="hamburger"
+        id="hamburger"
+        type="button"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="home.html">Home</a></li>
+        <li><a href="museums.html">Museums</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="home.html#Favorites-section">Favorites</a></li>
+        <li class="mobile-only-nav">
+          <a href="privacy.html">Privacy Policy</a>
+        </li>
+      </ul>
+    </nav>
+
+    <section class="privacy-policy">
+      <h1>Privacy Policy</h1>
+
+      <p>
+        Near You is a mock website created for portfolio and educational
+        purposes. This website is not a real business or service.
+      </p>
+
+      <h2>Information We Collect</h2>
+      <p>
+        This website does not intentionally collect personal information from
+        users. Any search fields, favorites, or interactive features are used
+        only to demonstrate website functionality.
+      </p>
+
+      <h2>Local Storage</h2>
+      <p>
+        This website may use your browser’s local storage to save favorite
+        museums. This information stays on your device and is not sent to a
+        server.
+      </p>
+
+      <h2>Third-Party Services</h2>
+      <p>
+        This website may use third-party resources such as Google Fonts, image
+        sources, map/location lookup tools, or JavaScript libraries. These
+        services may collect basic technical information according to their own
+        privacy policies.
+      </p>
+
+      <h2>No Real Transactions</h2>
+      <p>
+        This website does not process payments, create user accounts, sell
+        products, or collect sensitive personal information.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Because this is a mock portfolio project, questions about this privacy
+        policy can be directed to the website creator.
+      </p>
+
+      <p><strong>Last updated:</strong> July 2026</p>
+    </section>
+
+    <script>
+      function setupMobileMenu() {
+        const hamburger = document.getElementById("hamburger");
+        const navLinks = document.getElementById("nav-links");
+
+        hamburger.addEventListener("click", () => {
+          const isOpen = navLinks.classList.toggle("open");
+          hamburger.setAttribute("aria-expanded", isOpen.toString());
+        });
+
+        navLinks.querySelectorAll("a").forEach((link) => {
+          link.addEventListener("click", () => {
+            navLinks.classList.remove("open");
+            hamburger.setAttribute("aria-expanded", "false");
+          });
+        });
+      }
+
+      setupMobileMenu();
+    </script>
+  </body>
+</html>
