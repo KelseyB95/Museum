@@ -184,6 +184,7 @@ nav {
   background: white;
   border: 2px solid white;
   border-radius: 999px;
+  box-sizing: border-box;
   color: black;
   display: inline-block;
   font-weight: bold;
@@ -232,6 +233,8 @@ nav {
     font-size: 1.7rem;
   }
   .contact-button {
+    font-size: 0.95rem;
+    padding: 0.7rem 1rem;
     width: 100%;
   }
 }
